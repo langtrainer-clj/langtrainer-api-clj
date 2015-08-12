@@ -11,8 +11,7 @@
   (start [this]
     (if datasource ; already started
       this
-      (let [spec (pool/make-datasource-spec (:db-spec this))]
-        (assoc this :datasource spec))))
+      (assoc this :datasource (pool/make-datasource-spec (:db-spec this)))))
 
   (stop [this]
     (if (not datasource) ; already stopped

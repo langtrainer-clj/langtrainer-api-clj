@@ -3,9 +3,9 @@
   (:require [com.stuartsierra.component :as component]
             [compojure.core :refer [routes]]
             [compojure.route :as route]
-            [langtrainer-api-clj.handlers.home :refer [new-home-routes]]))
+            [langtrainer-api-clj.handlers.world :refer [new-world-routes]]))
 
-(defrecord Routes [routing-table home]
+(defrecord Routes [routing-table world]
   component/Lifecycle
 
   (start [this]
@@ -13,7 +13,7 @@
       this
       (assoc this :routing-table
              (-> (routes
-                   (new-home-routes home)
+                   (new-world-routes world)
                    (route/not-found "Not Found"))))))
 
   (stop [this]
