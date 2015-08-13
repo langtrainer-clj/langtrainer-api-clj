@@ -4,7 +4,7 @@
             [langtrainer-api-clj.server :refer [new-server]]
             [langtrainer-api-clj.models.user :refer [new-user-model]]
             [langtrainer-api-clj.handlers.world :refer [new-world-handler]]
-            [langtrainer-api-clj.db.postgres :refer [new-database]]))
+            [langtrainer-api-clj.db :refer [new-database]]))
 
 (defn new-system [config-options]
   (component/system-map

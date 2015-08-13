@@ -1,20 +1,24 @@
 (ns langtrainer-api-clj.models.user
-  (:require [com.stuartsierra.component :as component]
-            [clojure.java.jdbc :as jdbc]))
+  (:use [korma.core])
+  (:require [com.stuartsierra.component :as component]))
 
-(defrecord User [db]
+(defrecord User [db entity]
   component/Lifecycle
 
   (start [this]
-    this)
+    (if entity
+      this
+      (assoc this :entity
+             (-> (create-entity "users")
+                 (database (:db db))
+                 (entity-fields :id)))))
+
   (stop [this]
     this))
 
 (defn new-user-model []
   (map->User {}))
 
-(defn all [{{db :datasource} :db}]
-  (jdbc/query db ["SELECT * FROM users"] :result-set-fn first))
-
-(defn fetch [{{db :datasource} :db} & token]
-  (jdbc/query db ["SELECT * FROM users WHERE token=? LIMIT 1" token] :result-set-fn first))
+(defn all [{users :entity}]
+  (-> (select* users)
+      select))

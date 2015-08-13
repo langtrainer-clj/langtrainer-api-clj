@@ -13,11 +13,9 @@
                  [org.slf4j/jul-to-slf4j "1.7.12"]
                  [org.slf4j/jcl-over-slf4j "1.7.12"]
                  [org.slf4j/log4j-over-slf4j "1.7.12"]
-                 [org.clojure/java.jdbc "0.4.0"]
-                 [clojure.jdbc/clojure.jdbc-c3p0 "0.3.2"]
-                 [com.mchange/c3p0 "0.9.5.1"]
                  [environ "1.0.0"]
                  [ring/ring-jetty-adapter "1.4.0"]
+                 [korma "0.4.2"]
                  [com.stuartsierra/component "0.2.3"]]
   :resource-paths ["config", "resources"]
   :profiles {:dev {:aliases {"run-dev" ["trampoline" "run" "-m" "user/start"]}
