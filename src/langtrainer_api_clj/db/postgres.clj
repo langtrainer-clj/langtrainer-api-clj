@@ -10,6 +10,9 @@
          :subprotocol "postgresql"
          :user (get user-and-password 0)
          :password (get user-and-password 1)
+         :initial-pool-size 3
+         :min-pool-size 3
+         :max-pool-size 15
          :subname (if (= -1 (.getPort db-uri))
                     (format "//%s%s" (.getHost db-uri) (.getPath db-uri))
                     (format "//%s:%s%s" (.getHost db-uri) (.getPort db-uri) (.getPath db-uri)))}))))
