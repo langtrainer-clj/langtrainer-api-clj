@@ -14,11 +14,12 @@
                  (entity-fields :id)))))
 
   (stop [this]
-    this))
+    (if (not entity)
+      this
+      (assoc this :entity nil))))
 
 (defn new-user-model []
   (map->User {}))
 
 (defn all [{users :entity}]
-  (-> (select* users)
-      select))
+  (-> (select* users) select))

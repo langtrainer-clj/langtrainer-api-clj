@@ -12,7 +12,12 @@
                           default-connection))))
 
   (stop [this]
-    this))
+    (if (not db)
+      this
+      (do
+        (.close (-> db :pool deref :datasource))
+        (assoc this :db nil)
+        (default-connection nil)))))
 
 (defn- make-db-uri [db-url]
   (java.net.URI. db-url))
