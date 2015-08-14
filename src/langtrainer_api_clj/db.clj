@@ -34,7 +34,9 @@
                  :user (get user-and-password 0)
                  :password (get user-and-password 1)
                  :host (.getHost db-uri)
-                 :port (.getPort db-uri)}))))
+                 :port (.getPort db-uri)
+                 :ssl true
+                 :sslfactory "org.postgresql.ssl.NonValidatingFactory"}))))
 
 (defn new-database [db-url]
   (map->JDBCDatabase {:db-spec (new-db-spec db-url)}))
