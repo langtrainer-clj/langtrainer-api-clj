@@ -1,4 +1,4 @@
-(ns langtrainer-api-clj.core
+(ns langtrainer-api-clj.main
   (:gen-class) ; for -main method in uberjar
   (:use [ring.adapter.jetty]
         [ring.middleware.resource])

@@ -1,25 +1,18 @@
 (ns langtrainer-api-clj.handlers.world
   (:use [compojure.core])
-  (:require [com.stuartsierra.component :as component]
-            [ring.util.response :refer [response]]
+  (:require [ring.util.response :refer [response]]
+            [langtrainer-api-clj.models.language :as language]
+            [langtrainer-api-clj.models.course :as course]
             [langtrainer-api-clj.models.user :as user]))
 
-(defrecord World [user]
-  component/Lifecycle
-
-  (start [this]
-    this)
-  (stop [this]
-    this))
-
-(defn new-world-handler []
-  (map->World {}))
-
-(defn show-fn [this]
+(defn show-fn [data]
   (fn [token]
-    (let [current-user (user/fetch (:user this) token)]
-      (response {:token (:token current-user)}))))
+    (let [models (:models data)
+          current-user (user/fetch (:user models) token)]
+        (response {:token (:token current-user)
+                   :languages (mapv #(select-keys % [:slug]) (language/published))
+                   :courses (course/for-world models)}))))
 
-(defn new-world-routes [this]
+(defn new-world-routes [data]
   (routes
-    (GET "/world" [token] ((show-fn this) token))))
+    (GET "/world" [token] ((show-fn data) token))))

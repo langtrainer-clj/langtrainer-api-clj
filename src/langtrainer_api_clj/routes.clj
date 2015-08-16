@@ -7,7 +7,7 @@
             [ring.middleware.json :refer [wrap-json-response]]
             [langtrainer-api-clj.handlers.world :refer [new-world-routes]]))
 
-(defrecord Routes [routing-table world]
+(defrecord Routes [routing-table data]
   component/Lifecycle
 
   (start [this]
@@ -15,7 +15,7 @@
       this
       (assoc this :routing-table
              (-> (routes
-                   (new-world-routes world)
+                   (new-world-routes data)
                    (route/not-found "Not Found"))
                  (wrap-json-response)
                  (wrap-defaults api-defaults)))))

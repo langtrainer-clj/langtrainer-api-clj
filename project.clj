@@ -25,8 +25,8 @@
                    :dependencies [[javax.servlet/servlet-api "2.5"]
                                   [ring-mock "0.1.5"]
                                   [org.clojure/tools.namespace "0.2.10"]]}
-             :uberjar {:aot [langtrainer-api-clj.core]}}
-  :main ^{:skip-aot true} langtrainer-api-clj.core
+             :uberjar {:aot [langtrainer-api-clj.main]}}
+  :main ^{:skip-aot true} langtrainer-api-clj.main
   :uberjar-name "langtrainer-api-clj.jar"
   :jvm-opts ["-server"]
   :repl-options {:init-ns user

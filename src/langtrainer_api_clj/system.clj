@@ -2,22 +2,18 @@
   (:require [com.stuartsierra.component :as component]
             [langtrainer-api-clj.routes :refer [new-routes]]
             [langtrainer-api-clj.server :refer [new-server]]
-            [langtrainer-api-clj.models.user :refer [new-user-model]]
-            [langtrainer-api-clj.handlers.world :refer [new-world-handler]]
-            [langtrainer-api-clj.db :refer [new-database]]))
+            [langtrainer-api-clj.db :refer [new-database]]
+            [langtrainer-api-clj.data :refer [new-data-layer]]))
 
 (defn new-system [config-options]
   (component/system-map
     :db (new-database (:database-url config-options))
+    :data (component/using
+            (new-data-layer)
+            [:db])
     :routes (component/using
               (new-routes)
-              {:world :handlers/world})
+              [:data])
     :server (component/using
            (new-server (:service-map config-options))
-           [:routes])
-    :models/user (component/using
-                   (new-user-model)
-                   [:db])
-    :handlers/world (component/using
-                     (new-world-handler)
-                     {:user :models/user})))
+           [:routes])))
