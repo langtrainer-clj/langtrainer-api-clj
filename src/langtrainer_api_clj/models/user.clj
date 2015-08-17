@@ -1,14 +1,27 @@
 (ns langtrainer-api-clj.models.user
   (:use [korma.core])
   (:require [crypto.random :as random]
-            [langtrainer-api-clj.protocols :as protocols]))
+            [langtrainer-api-clj.protocols :as protocols]
+            [langtrainer-api-clj.models.utils :refer [fk]]))
 
 (defrecord User [entity]
   protocols/Model
 
+  (define-relations [this {{trainings :entity} :training}]
+     (assoc-in this
+               [:entity :rel "trainings"]
+               (delay
+                 (create-relation
+                  (:entity this)
+                  trainings
+                  :has-many
+                  (fk :user_id))))))
+
+(extend-protocol protocols/ClosuresContainer
+  User
   (define-closures [this models]
     (assoc
-      (:user models)
+      this
       :fetch-current-step
       (fn [user-id unit-id]
         (let [{{trainings :entity} :training
