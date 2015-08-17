@@ -6,6 +6,7 @@
             [langtrainer-api-clj.models.course :refer [new-course-model]]
             [langtrainer-api-clj.models.unit :refer [new-unit-model]]
             [langtrainer-api-clj.models.step :refer [new-step-model]]
+            [langtrainer-api-clj.models.steps-unit :refer [new-steps-unit-model]]
             [langtrainer-api-clj.models.training :refer [new-training-model]]))
 
 (defn fk [fk]
@@ -16,14 +17,15 @@
                        {units :entity} :unit
                        {courses :entity} :course
                        {steps :entity} :step
+                       {steps_units :entity} :steps-unit
                        {trainings :entity} :training :as models}]
   (-> models
       (assoc-in [:user :entity :rel "trainings"]
                 (delay (create-relation users trainings :has-many (fk :user_id))))
       (assoc-in [:unit :entity :rel "course"]
                 (delay (create-relation units courses :belongs-to (fk :course_id))))
-      (assoc-in [:step :entity :rel "unit"]
-                (delay (create-relation steps units :belongs-to (fk :unit_id))))
+      (assoc-in [:step :entity :rel "steps_units"]
+                (delay (create-relation steps steps_units :has-many (fk :step_id))))
       (assoc-in [:course :entity :rel "units"]
                 (delay (create-relation courses units :has-many (fk :course_id))))
       (assoc-in [:training :entity :rel "user"]
@@ -45,6 +47,7 @@
                     :course (new-course-model db)
                     :unit (new-unit-model db)
                     :step (new-step-model db)
+                    :steps-unit (new-steps-unit-model db)
                     :training (new-training-model db)}]
 
             (assoc this :models (-> models

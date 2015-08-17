@@ -12,8 +12,8 @@
       :fetch-current-step
       (fn [user-id unit-id]
         (let [{{trainings :entity} :training
-               {steps :entity} :step} models]
-          (println steps)
+               {steps :entity} :step
+               {steps-units :entity} :steps-unit} models]
           (if-let [training
                    (first (select trainings
                                   (where {:user_id user-id})
@@ -23,7 +23,9 @@
                            (where {:id (:current_step_id training)})
                            (limit 1)))
             (first (select steps
-                           (where {:unit_id unit-id})
+                           (fields :en_answers :ru_answers :en_question :ru_question :ru_help :en_help)
+                           (join :inner steps-units)
+                           (where {:steps_units.unit_id unit-id})
                            (limit 1)))))))))
 
 (defn new-user-model [db]
@@ -51,4 +53,4 @@
 (defn fetch [{users :entity :as model} token]
   (if-let [user (find-by-token model token)]
     user
-    [:token (generate-token)]))
+    {:token (generate-token)}))
