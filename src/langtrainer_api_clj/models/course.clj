@@ -2,8 +2,7 @@
   (:use [korma.core]))
 
 (defn new-course-model [db]
-  {:entity (-> (create-entity "courses")
-               (database (:db db)))})
+  {:entity (-> (create-entity "courses"))})
 
 (defn published [base]
    (where base {:published true}))

@@ -3,7 +3,6 @@
 
 (defn new-unit-model [db]
   {:entity (-> (create-entity (name "units"))
-               (database (:db db))
                (entity-fields :id :slug))})
 
 (defn all [{units :entity} scopes]

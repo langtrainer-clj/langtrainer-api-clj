@@ -1,11 +1,35 @@
 (ns langtrainer-api-clj.models.user
   (:use [korma.core])
-  (:require [crypto.random :as random]))
+  (:require [crypto.random :as random]
+            [langtrainer-api-clj.protocols :as protocols]))
+
+(defrecord User [entity]
+  protocols/Model
+
+  (define-closures [this models]
+    (assoc
+      (:user models)
+      :fetch-current-step
+      (fn [user-id unit-id]
+        (let [{{trainings :entity} :training
+               {steps :entity} :step} models]
+          (println steps)
+          (if-let [training
+                   (first (select trainings
+                                  (where {:user_id user-id})
+                                  (where {:unit_id unit-id})
+                                  (limit 1)))]
+            (first (select steps
+                           (where {:id (:current_step_id training)})
+                           (limit 1)))
+            (first (select steps
+                           (where {:unit_id unit-id})
+                           (limit 1)))))))))
 
 (defn new-user-model [db]
-  {:entity (-> (create-entity "users")
-               (database (:db db))
-               (entity-fields :token))})
+  (map->User {:entity
+              (-> (create-entity "users")
+                  (entity-fields :token))}))
 
 (defn find-by-token [{users :entity} token]
   (first (select users (where {:token token}) (limit 1))))
