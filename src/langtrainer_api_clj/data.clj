@@ -1,6 +1,6 @@
 (ns langtrainer-api-clj.data
   (:require [com.stuartsierra.component :as component]
-            [langtrainer-api-clj.protocols :refer [define-closures define-relations]]
+            [langtrainer-api-clj.protocols :refer [initialize]]
             [langtrainer-api-clj.models.user :refer [new-user-model]]
             [langtrainer-api-clj.models.course :refer [new-course-model]]
             [langtrainer-api-clj.models.unit :refer [new-unit-model]]
@@ -14,6 +14,9 @@
       (let [model-name (first model-names)]
         (recur (rest model-names) (assoc models model-name (f (model-name models) models))))
       models)))
+
+(defn assoc-models [this models]
+  (assoc this :models models))
 
 (defrecord Data [db models]
   component/Lifecycle
@@ -29,8 +32,8 @@
                     :training (new-training-model db)}]
 
             (assoc this :models (-> models
-                                    (transform-models define-relations)
-                                    (transform-models define-closures))))))
+                                    (transform-models initialize)
+                                    (transform-models assoc-models))))))
 
   (stop [this]
     (if (not models) ; already stopped

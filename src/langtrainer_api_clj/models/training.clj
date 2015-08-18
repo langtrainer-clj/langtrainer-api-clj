@@ -1,29 +1,17 @@
 (ns langtrainer-api-clj.models.training
-  (:use [korma.core])
+  (:use [korma.core :exclude [belongs-to]])
   (:require [langtrainer-api-clj.protocols :as protocols]
-            [langtrainer-api-clj.models.utils :refer [fk]]))
+            [langtrainer-api-clj.models.utils :refer [belongs-to]]))
 
 (defrecord Training [entity]
-  protocols/Model
+  protocols/HasRelations
 
-  (define-relations [this {{units :entity} :unit
-                           {users :entity} :user}]
+  (define-relations [this {unit :unit
+                           user :user}]
     (-> this
-        (assoc-in [:entity :rel "user"]
-                  (delay
-                    (create-relation
-                      (:entity this)
-                      units
-                      :belongs-to
-                      (fk :unit_id))))
-        (assoc-in [:entity :rel "unit"]
-                  (delay
-                    (create-relation
-                      (:entity this)
-                      users
-                      :belongs-to
-                      (fk :user_id)))))))
+        (belongs-to unit "unit" {:fk :unit_id})
+        (belongs-to user "user" {:fk :user_id}))))
 
 (defn new-training-model [db]
-  (map->Training {:entity (-> (create-entity (name "trainings"))
-                              (entity-fields :id))}))
+  (Training. (-> (create-entity (name "trainings"))
+                 (entity-fields :id))))

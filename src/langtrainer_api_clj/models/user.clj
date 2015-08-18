@@ -1,69 +1,45 @@
 (ns langtrainer-api-clj.models.user
-  (:use [korma.core])
+  (:use [korma.core :exclude [has-many]])
   (:require [crypto.random :as random]
             [langtrainer-api-clj.protocols :as protocols]
-            [langtrainer-api-clj.models.utils :refer [fk]]))
+            [langtrainer-api-clj.models.utils :refer [has-many find-by]]))
 
 (defrecord User [entity]
-  protocols/Model
+  protocols/HasRelations
 
-  (define-relations [this {{trainings :entity} :training}]
-     (assoc-in this
-               [:entity :rel "trainings"]
-               (delay
-                 (create-relation
-                  (:entity this)
-                  trainings
-                  :has-many
-                  (fk :user_id))))))
-
-(extend-protocol protocols/ClosuresContainer
-  User
-  (define-closures [this models]
-    (assoc
-      this
-      :fetch-current-step
-      (fn [user-id unit-id]
-        (let [{{trainings :entity} :training
-               {steps :entity} :step
-               {steps-units :entity} :steps-unit} models]
-          (if-let [training
-                   (first (select trainings
-                                  (where {:user_id user-id})
-                                  (where {:unit_id unit-id})
-                                  (limit 1)))]
-            (first (select steps
-                           (where {:id (:current_step_id training)})
-                           (limit 1)))
-            (first (select steps
-                           (fields :en_answers :ru_answers :en_question :ru_question :ru_help :en_help)
-                           (join :inner steps-units)
-                           (where {:steps_units.unit_id unit-id})
-                           (limit 1)))))))))
+  (define-relations [this {training :training}]
+    (has-many this training "trainings" {:fk :user_id})))
 
 (defn new-user-model [db]
-  (map->User {:entity
-              (-> (create-entity "users")
-                  (entity-fields :token))}))
-
-(defn find-by-token [{users :entity} token]
-  (first (select users (where {:token token}) (limit 1))))
+  (User. (-> (create-entity "users")
+             (entity-fields :token))))
 
 (defn find-or-create-by [{users :entity :as model} token]
-  (if-let [user (find-by-token model token)]
+  (if-let [user (find-by model {:token token})]
     user
     (insert users (values {:token token}) (insert))))
 
 (defn generate-token []
   (random/url-part 32))
 
-(defn new-token [{users :entity :as model}]
+(defn new-token [model]
   (loop [token (generate-token)]
-    (if (find-by-token model token)
+    (if (find-by model {:token token})
       (recur (generate-token))
       token)))
 
-(defn fetch [{users :entity :as model} token]
-  (if-let [user (find-by-token model token)]
+(defn fetch [model token]
+  (if-let [user (find-by model {:token token})]
     user
     {:token (generate-token)}))
+
+(defn fetch-current-step [this user-id unit-id]
+  (let [models (:models this)
+        {training :training step :step} models]
+    (if-let [training (find-by training {:user_id user-id :unit_id unit-id})]
+      (find-by step {:id (:current_step_id training)})
+      (first (select (:entity step)
+                     (fields :en_answers :ru_answers :en_question :ru_question :ru_help :en_help)
+                     (join :inner (get-in models [:steps-unit :entity]))
+                     (where {:steps_units.unit_id unit-id})
+                     (limit 1))))))

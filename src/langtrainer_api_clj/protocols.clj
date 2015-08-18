@@ -1,19 +1,20 @@
 (ns langtrainer-api-clj.protocols)
 
-(defprotocol ClosuresContainer
-  (define-closures [this context] "Add closures to the record"))
+(defprotocol HasRelations
+  "A database model protocol"
+  (define-relations [this models]))
 
 (defprotocol Model
   "A database model protocol"
-  (define-relations [this models] "Add relations to model record"))
+  (initialize [this models]))
 
 ;; No-op implementation if one is not defined.
-(extend-protocol ClosuresContainer
+(extend-protocol HasRelations
   java.lang.Object
-  (define-closures [this models]
+  (define-relations [this models]
     this))
 
 (extend-protocol Model
   java.lang.Object
-  (define-relations [this models]
-    this))
+  (initialize [this models]
+    (define-relations this models)))

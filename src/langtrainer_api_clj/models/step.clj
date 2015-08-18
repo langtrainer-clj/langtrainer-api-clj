@@ -1,21 +1,14 @@
 (ns langtrainer-api-clj.models.step
-  (:use [korma.core])
+  (:use [korma.core :exclude [has-many]])
   (:require [langtrainer-api-clj.protocols :as protocols]
-            [langtrainer-api-clj.models.utils :refer [fk]]))
+            [langtrainer-api-clj.models.utils :refer [has-many]]))
 
 (defrecord Step [entity]
-  protocols/Model
+  protocols/HasRelations
 
-  (define-relations [this {{steps_units :entity} :steps_unit}]
-    (assoc-in this
-              [:entity :rel "steps_units"]
-              (delay
-                (create-relation
-                  (:entity this)
-                  steps_units
-                  :has-many
-                  (fk :step_id))))))
+  (define-relations [this {steps-unit :steps-unit}]
+    (has-many this steps-unit "steps_units" {:fk :step_id})))
 
 (defn new-step-model [db]
-  (map->Step {:entity (-> (create-entity (name "steps"))
-                          (entity-fields :id))}))
+  (Step. (-> (create-entity (name "steps"))
+             (entity-fields :id))))

@@ -1,24 +1,16 @@
 (ns langtrainer-api-clj.models.course
-  (:use [korma.core])
+  (:use [korma.core :exclude [has-many]])
   (:require [langtrainer-api-clj.protocols :as protocols]
-            [langtrainer-api-clj.models.utils :refer [fk]]))
+            [langtrainer-api-clj.models.utils :refer [has-many]]))
 
 (defrecord Course [entity]
-  protocols/Model
+  protocols/HasRelations
 
-  (define-relations [this {{units :entity} :unit}]
-    (assoc-in this
-              [:entity :rel "units"]
-              (delay
-                (create-relation
-                  (:entity this)
-                  units
-                  :has-many
-                  (fk :course_id))))))
+  (define-relations [this {unit :unit}]
+    (has-many this unit "units" {:fk :course_id})))
 
 (defn new-course-model [db]
-  (map->Course {:entity
-                (-> (create-entity "courses"))}))
+  (Course. (create-entity "courses")))
 
 (defn published [base]
    (where base {:published true}))
