@@ -1,6 +1,6 @@
 (ns langtrainer-api-clj.db
   (:require [com.stuartsierra.component :as component]
-            [korma.db :refer [create-db postgres default-connection]]))
+            [jdbc.pool.c3p0 :refer [make-datasource-spec]]))
 
 (defrecord JDBCDatabase [db-spec db]
   component/Lifecycle
@@ -8,16 +8,14 @@
   (start [this]
     (if db
       this
-      (assoc this :db (-> (create-db db-spec)
-                          default-connection))))
+      (assoc this :db (make-datasource-spec db-spec))))
 
   (stop [this]
     (if (not db)
       this
       (do
-        (.close (-> db :pool deref :datasource))
-        (assoc this :db nil)
-        (default-connection nil)))))
+        (.close db)
+        (assoc this :db nil)))))
 
 (defn- make-db-uri [db-url]
   (java.net.URI. db-url))
@@ -28,15 +26,20 @@
     (clojure.string/split (.getUserInfo db-uri) #":")))
 
 (defn- new-db-spec [db-url]
-  (let [db-uri (make-db-uri db-url)]
-    (let [user-and-password (fetch-user-and-password db-uri)]
-      (postgres {:db (subs (.getPath db-uri) 1)
-                 :user (get user-and-password 0)
-                 :password (get user-and-password 1)
-                 :host (.getHost db-uri)
-                 :port (.getPort db-uri)
-                 :ssl true
-                 :sslfactory "org.postgresql.ssl.NonValidatingFactory"}))))
+  (let [db-uri (make-db-uri db-url)
+        user-and-password (fetch-user-and-password db-uri)]
+    {:classname "org.postgresql.Driver"
+     :subprotocol "postgresql"
+     :user (get user-and-password 0)
+     :password (get user-and-password 1)
+     :initial-pool-size 3
+     :min-pool-size 3
+     :max-pool-size 15
+     :ssl true
+     :sslfactory "org.postgresql.ssl.NonValidatingFactory"
+     :subname (if (= -1 (.getPort db-uri))
+                (format "//%s%s" (.getHost db-uri) (.getPath db-uri))
+                (format "//%s:%s%s" (.getHost db-uri) (.getPort db-uri) (.getPath db-uri)))}))
 
 (defn new-database [db-url]
   (map->JDBCDatabase {:db-spec (new-db-spec db-url)}))

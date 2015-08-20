@@ -5,28 +5,13 @@
             [langtrainer-api-clj.models.course :as course]
             [langtrainer-api-clj.models.user :as user]))
 
-(defn transform-step [unit-row step-row]
-  (assoc step-row :unit_id (:id unit-row)))
-
-(defn transform-unit [user user-id course-row unit-row]
-  (-> unit-row
-    (assoc :course_slug (:slug course-row))
-    (assoc :current_step (transform-step unit-row (user/fetch-current-step user user-id (:id unit-row))))))
-
-(defn transform-course [user user-id course-row]
-  (assoc course-row :units (mapv (partial transform-unit user user-id course-row) (:units course-row))))
-
-(defn show-fn [data]
+(defn show-fn [db]
   (fn [token]
-    (let [models (:models data)
-          user (:user models)
-          current-user (user/fetch user token)]
+    (let [current-user (user/fetch db token)]
       (response {:token (:token current-user)
-                 :languages (mapv #(select-keys % [:slug])
-                                  (language/published))
-                 :courses (mapv (partial transform-course user (:id current-user))
-                                (course/for-world models))}))))
+                 :languages (mapv #(select-keys % [:slug]) (language/published))
+                 :courses (course/for-world db (:id current-user))}))))
 
-(defn new-world-routes [data]
+(defn new-world-routes [db]
   (routes
-    (GET "/world" [token] ((show-fn data) token))))
+    (GET "/world" [token] ((show-fn db) token))))
