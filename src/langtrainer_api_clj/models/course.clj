@@ -3,61 +3,64 @@
             [clojure.string :as str]
             [java-jdbc.sql :as sql]))
 
-(defn- find-first [f coll]
-  (first (filter f coll)))
-
-(defn- transform-units [result]
-  (defn transform-unit [row]
-    (-> row
-        (assoc :course_slug (:slug
-                              (find-first
-                                #(= (:id %) (:course_id row))
-                                (:courses result))))))
-  (assoc result :units (mapv transform-unit (:units result))))
-
-(defn- transform-courses [result]
-  (defn transform-course [row]
-    (assoc row :units (filter #(= (:course_id %) (:id row)) (:units result))))
-  (mapv transform-course (:courses result)))
-
-(defn for-world [db user-id]
-  (defn select-courses []
+(defn fetch-world [db user-id]
+  (defn select-touched []
     (jdbc/query db
-      (sql/select [:id :slug] :courses (sql/where {:published true}))))
-
-  (defn select-units [course-ids]
-    (jdbc/query db
-      (sql/select [:id :slug :course_id] :units (sql/where {:course_id course-ids}))))
-
-  (defn select-trainings [user-id unit-ids]
-    (jdbc/query db
-      (sql/select "current_step_id AS step_id, unit_id"
-                  :trainings
-                  (sql/where {:user_id user-id :unit_id unit-ids}))))
-
-  (defn select-steps [step-ids]
-    (jdbc/query db
-      (sql/select [:id :en_answers :ru_answers :en_question :ru_question :ru_help :en_help]
-                  :steps
-                  (sql/where {:steps.id step-ids}))))
+      (sql/select ["courses.id AS course_id" "courses.slug AS course_slug" "units.slug AS unit_slug" "units.id AS unit_id" "steps.id AS step_id" :en_answers :ru_answers :en_question :ru_question :ru_help :en_help]
+                  :courses
+                  (str "INNER " (sql/join :units {:courses.id :units.course_id}))
+                  (str "INNER " (sql/join :trainings {:units.id :trainings.unit_id}))
+                  (str "INNER " (sql/join :steps {:steps.id :trainings.current_step_id}))
+                  (sql/where {:user_id user-id :courses.published true :units.published true}))))
 
   (defn select-first-steps [unit-ids]
     (jdbc/query db
-      (sql/select "unit_id, MIN(steps.id)"
+      (sql/select "MIN(steps.id) AS id"
                   :steps
                   (str "INNER " (sql/join :steps_units {:steps.id :steps_units.step_id}))
-                  (cons (str "unit_id NOT IN (" (str/join ", " (repeat (count unit-ids) "?")) ")") unit-ids)
+                  (when-not (empty? unit-ids)
+                    (cons (str "unit_id NOT IN (" (str/join ", " (repeat (count unit-ids) "?")) ")") unit-ids))
                   "GROUP BY unit_id")))
 
-  (let [courses-rows (select-courses)
-        units-rows (select-units (mapv :id courses-rows))
-        trainings-rows (select-trainings user-id (mapv :id units-rows))
-        steps-rows (select-steps (mapv :step_id trainings-rows))
-        first-steps-rows (select-first-steps (mapv :unit_id trainings-rows))]
-    (println (mapv :unit_id first-steps-rows))
-    (-> {:courses courses-rows
-         :units units-rows
-         :trainings trainings-rows
-         :steps steps-rows}
-        transform-units
-        transform-courses)))
+  (defn select-untouched [unit-ids]
+    (jdbc/query db
+      (sql/select ["steps.id AS step_id" "units.slug AS unit_slug" "steps_units.unit_id AS unit_id" "courses.slug AS course_slug" "courses.id AS course_id" :en_answers :ru_answers :en_question :ru_question :ru_help :en_help]
+                  :steps
+                  (sql/join :steps_units {:steps.id :steps_units.step_id})
+                  (sql/join :units {:units.id :steps_units.unit_id})
+                  (sql/join :courses {:courses.id :units.course_id})
+                  (sql/where {:steps.id (mapv :id (select-first-steps unit-ids)) :courses.published true :units.published true}))))
+
+  (defn transform-unit [row]
+    {:id (:unit_id row)
+     :slug (:unit_slug row)
+     :course_slug (:course_slug row)
+     :current_step {:id (:step_id row)
+                    :unit_id (:unit_id row)
+                    :en_answers (:en_answers row)
+                    :ru_answers (:ru_answers row)
+                    :en_question (:en_question row)
+                    :ru_question (:ru_question row)
+                    :ru_help (:ru_help row)
+                    :en_help (:en_help row)}})
+
+  (defn assoc-course [result row]
+    (let [slug (keyword (:course_slug row))
+          course (slug result)]
+      (if course
+        (if (first (filter #(= (:id %) (:unit_id row)) (:units course)))
+          result
+          (assoc-in result [slug :units] (sort-by :id (conj (:units course) (transform-unit row)))))
+        (assoc result
+               slug
+               {:id (:course_id row)
+                :slug slug
+                :units [(transform-unit row)]}))))
+
+  (let [touched (select-touched)
+        untouched (select-untouched (mapv :unit_id touched))]
+    (loop [rows   (concat touched untouched)
+           result {}]
+      (if (empty? rows)
+        (sort-by :id (vals result))
+        (recur (rest rows) (assoc-course result (first rows)))))))

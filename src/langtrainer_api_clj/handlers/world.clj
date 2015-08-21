@@ -9,8 +9,8 @@
   (fn [token]
     (let [current-user (user/fetch db token)]
       (response {:token (:token current-user)
-                 :languages (mapv #(select-keys % [:slug]) (language/published))
-                 :courses (course/for-world db (:id current-user))}))))
+                 :languages (mapv #(select-keys % [:slug]) (language/published db))
+                 :courses (course/fetch-world db (:id current-user))}))))
 
 (defn new-world-routes [db]
   (routes

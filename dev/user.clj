@@ -7,6 +7,8 @@
             [clojure.tools.namespace.repl :refer [refresh refresh-all]]
             [com.stuartsierra.component :as component]
             [langtrainer-api-clj.system :refer [new-system]]
+            [clojure.java.jdbc :as jdbc]
+            [java-jdbc.sql :as sql]
             [environ.core :refer [env]]))
 
 (declare system)

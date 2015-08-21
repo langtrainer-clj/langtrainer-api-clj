@@ -13,12 +13,13 @@
   (start [this]
     (if routing-table ; already started
       this
-      (assoc this :routing-table
-             (-> (routes
-                   (new-world-routes db)
-                   (route/not-found "Not Found"))
-                 (wrap-json-response)
-                 (wrap-defaults api-defaults)))))
+      (let [db-spec (:db db)]
+        (assoc this :routing-table
+               (-> (routes
+                     (new-world-routes db-spec)
+                     (route/not-found "Not Found"))
+                   (wrap-json-response)
+                   (wrap-defaults api-defaults))))))
 
   (stop [this]
     (if (not routing-table) ; already stopped
