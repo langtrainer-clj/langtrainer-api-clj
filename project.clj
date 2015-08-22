@@ -18,7 +18,7 @@
                  [ring/ring-json "0.4.0"]
                  [org.clojure/java.jdbc "0.3.7"]
                  [java-jdbc/dsl "0.1.3"]
-                 [clojure.jdbc/clojure.jdbc-c3p0 "0.3.2"]
+                 [com.mchange/c3p0 "0.9.2.1"]
                  [crypto-random "1.2.0"]
                  [com.stuartsierra/component "0.2.3"]]
   :resource-paths ["config", "resources"]
